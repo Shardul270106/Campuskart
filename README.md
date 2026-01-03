@@ -60,9 +60,9 @@ https://youtu.be/ryS305n-DdE
 ![Main Marketplace](CampuskartScreenshots/Main Marketplace.png)
 ![Marketplace](CampuskartScreenshots/Marketplace.png)
 ![Marketplace 1](CampuskartScreenshots/Marketplace1.png)
-![Marketplace 2](CampuskartScreenshots/Marketplace 2.png)
-![Marketplace 3](CampuskartScreenshots/Marketplace 3.png)
-![Marketplace 4](CampuskartScreenshots/Marketplace 4.png)
+![Marketplace 2](CampuskartScreenshots/Marketplace2.png)
+![Marketplace 3](CampuskartScreenshots/Marketplace3.png)
+![Marketplace 4](CampuskartScreenshots/Marketplace4.png)
 
 ---
 
@@ -73,10 +73,10 @@ https://youtu.be/ryS305n-DdE
 
 ### User Profile & Update Profile
 ![Profile](CampuskartScreenshots/Profile.png)
-![Profile 1](CampuskartScreenshots/Profile 1.png)
-![Profile 2](CampuskartScreenshots/Profile 2.png)
-![Profile 3](CampuskartScreenshots/Profile 3.png)
-![Profile 4](CampuskartScreenshots/Profile 4.png)
+![Profile 1](CampuskartScreenshots/Profile1.png)
+![Profile 2](CampuskartScreenshots/Profile2.png)
+![Profile 3](CampuskartScreenshots/Profile3.png)
+![Profile 4](CampuskartScreenshots/Profile4.png)
 
 ---
 
