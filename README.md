@@ -57,7 +57,7 @@ https://youtu.be/ryS305n-DdE
 ---
 
 ### Marketplace
-![Main Marketplace](CampuskartScreenshots/Main Marketplace.png)
+![Main Marketplace](CampuskartScreenshots/MainMarketplace.png)
 ![Marketplace](CampuskartScreenshots/Marketplace.png)
 ![Marketplace 1](CampuskartScreenshots/Marketplace1.png)
 ![Marketplace 2](CampuskartScreenshots/Marketplace2.png)
