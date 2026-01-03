@@ -28,16 +28,63 @@ Campus communities lack a central, organized platform for buying and selling ite
 ---
 
 ## Key Features
-- User authentication and profile management  
+- User authentication and profile management (Update Profile supported)  
 - Buy, sell, and manage items  
 - Cart and order management with invoice generation  
-- Admin dashboard for monitoring users and orders  
+- Admin dashboard for monitoring users  
+- Admin can block or delete user profiles  
 
 ---
 
 ## Demo Video 🎥
 ▶️ **CampusKart Full Demo (YouTube)**  
 https://youtu.be/ryS305n-DdE
+
+---
+
+## Screenshots 📸
+
+### User Authentication
+![User Registration](CampuskartScreenshots/UserRegistration.png)
+![User Login](CampuskartScreenshots/Userlogin.png)
+
+---
+
+### Admin Authentication
+![Admin Registration](CampuskartScreenshots/Admin Registration.png)
+![Admin Login](CampuskartScreenshots/AdminLogin.png)
+
+---
+
+### Marketplace
+![Main Marketplace](CampuskartScreenshots/Main Marketplace.png)
+![Marketplace](CampuskartScreenshots/Marketplace.png)
+![Marketplace 1](CampuskartScreenshots/Marketplace1.png)
+![Marketplace 2](CampuskartScreenshots/Marketplace 2.png)
+![Marketplace 3](CampuskartScreenshots/Marketplace 3.png)
+![Marketplace 4](CampuskartScreenshots/Marketplace 4.png)
+
+---
+
+### Sell Item
+![Sell Item](CampuskartScreenshots/Sellitem.png)
+
+---
+
+### User Profile & Update Profile
+![Profile](CampuskartScreenshots/Profile.png)
+![Profile 1](CampuskartScreenshots/Profile 1.png)
+![Profile 2](CampuskartScreenshots/Profile 2.png)
+![Profile 3](CampuskartScreenshots/Profile 3.png)
+![Profile 4](CampuskartScreenshots/Profile 4.png)
+
+---
+
+### Admin Dashboard & User Management
+![Admin Dashboard](CampuskartScreenshots/AdminDashboard.png)
+![Admin Dashboard 1](CampuskartScreenshots/AdminDashboard1.png)
+![Admin Dashboard 2](CampuskartScreenshots/AdminDashboard2.png)
+![Admin Dashboard 3](CampuskartScreenshots/AdminDashboard3.png)
 
 ---
 
