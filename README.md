@@ -33,12 +33,12 @@ Campus communities lack a central, organized platform for buying and selling ite
 ---
 
 ## Demo Video
-[Watch the CampusKart Demo](https://github.com/Shardul270106/Campuskart/raw/main/CampusKartDemo.mp4)
 
+<video width="800" controls>
+  <source src="https://raw.githubusercontent.com/Shardul270106/Campuskart/main/CampusKartDemo.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
 
-*Tip:* Users can click the link to play the video in their browser.  
-
----
 
 ## How to Run
 1. Clone the repository:  
