@@ -51,7 +51,7 @@ https://youtu.be/ryS305n-DdE
 ---
 
 ### Admin Authentication
-![Admin Registration](CampuskartScreenshots/Admin Registration.png)
+![Admin Registration](CampuskartScreenshots/AdminRegistration.png)
 ![Admin Login](CampuskartScreenshots/AdminLogin.png)
 
 ---
