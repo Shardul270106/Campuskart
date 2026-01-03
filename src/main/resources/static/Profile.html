@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - CampusKart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        body {
+          font-family: 'Poppins', sans-serif;
+          background: #f8fafc;
+          color: #1e293b;
+        }
+
+        /* Layout */
+        .profile-container {
+          max-width: 900px;
+          margin: 40px auto;
+          padding: 0 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 30px;
+        }
+
+        /* Profile Card */
+        .profile-card {
+          background: white;
+          padding: 2rem;
+          border-radius: 1.2rem;
+          box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+          text-align: center;
+        }
+
+        .profile-avatar {
+          width: 90px;
+          height: 90px;
+          border-radius: 50%;
+          background: #cbd5e1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 28px;
+          font-weight: 600;
+          margin: 0 auto 15px;
+        }
+
+        .edit-btn {
+          background: #2563eb;
+          color: white;
+          padding: 10px 18px;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        /* Sections */
+        .items-section {
+          background: white;
+          padding: 1.5rem;
+          border-radius: 1rem;
+          box-shadow: 0 6px 20px rgba(0,0,0,0.05);
+        }
+
+        /* Items */
+        .items-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+          gap: 15px;
+        }
+
+        .item-card {
+          border: 1px solid #e2e8f0;
+          border-radius: 10px;
+          overflow: hidden;
+          background: #f9fafb;
+        }
+
+        .item-card img {
+          width: 100%;
+          height: 150px;
+          object-fit: cover;
+        }
+
+        .item-info {
+          padding: 10px;
+        }
+
+        /* Invoice */
+        table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+
+        th, td {
+          padding: 10px;
+          border: 1px solid #e2e8f0;
+        }
+
+        .download-btn {
+          background: #16a34a;
+          color: white;
+          padding: 6px 12px;
+          border-radius: 6px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        /* Modal */
+        .modal {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.45);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 100;
+        }
+
+        .modal.hidden {
+          display: none;
+        }
+
+        .modal-content {
+          background: white;
+          width: 340px;
+          padding: 20px;
+          border-radius: 12px;
+        }
+
+        .modal-header {
+          font-size: 18px;
+          font-weight: 600;
+          margin-bottom: 15px;
+        }
+
+        .form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          margin-bottom: 12px;
+        }
+
+        .form-group input,
+        .form-group select {
+          padding: 8px;
+          border-radius: 6px;
+          border: 1px solid #cbd5e1;
+        }
+
+        .modal-buttons {
+          display: flex;
+          justify-content: flex-end;
+          gap: 10px;
+        }
+
+        .btn-modal {
+          padding: 8px 14px;
+          border-radius: 6px;
+          font-weight: 600;
+          cursor: pointer;
+          border: none;
+        }
+
+        .btn-submit {
+          background: #2563eb;
+          color: white;
+        }
+
+        .btn-cancel {
+          background: #e5e7eb;
+        }
+    </style>
+</head>
+
+<body>
+
+<main class="profile-container">
+
+    <!-- PROFILE -->
+    <section class="profile-card">
+        <div class="profile-avatar" id="profileInitial">S</div>
+        <h2 id="profileName"></h2>
+        <p id="profileMobile"></p>
+        <button id="editProfileBtn" class="edit-btn">Update Profile</button>
+    </section>
+
+    <!-- SELL ITEMS -->
+    <section class="items-section">
+        <h3 class="font-semibold mb-3">My Sell Items</h3>
+        <div id="sellItems" class="items-grid"></div>
+    </section>
+
+    <!-- BUY ITEMS -->
+    <section class="items-section">
+        <h3 class="font-semibold mb-3">My Purchased Items</h3>
+        <div id="buyItems" class="items-grid"></div>
+    </section>
+
+    <!-- INVOICES -->
+    <section class="items-section">
+        <h3 class="font-semibold mb-3">My Invoices</h3>
+        <table>
+            <thead class="bg-slate-100">
+            <tr>
+                <th>Invoice ID</th>
+                <th>Item</th>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody id="invoiceTable"></tbody>
+        </table>
+    </section>
+
+</main>
+
+<!-- UPDATE MODAL -->
+<div id="updateModal" class="modal hidden">
+    <div class="modal-content">
+        <div class="modal-header">Update Profile</div>
+
+        <form id="updateForm">
+            <div class="form-group">
+                <label>Field</label>
+                <select id="updateKey">
+                    <option value="name">Name</option>
+                    <option value="mobile">Mobile</option>
+                    <option value="password">Password</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>New Value</label>
+                <input type="text" id="updateValue" required>
+            </div>
+
+            <div class="modal-buttons">
+                <button type="button" class="btn-modal btn-cancel" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn-modal btn-submit">Update</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="imageModal" class="modal hidden">
+    <div class="modal-content" style="max-width:600px; padding:10px;">
+        <span id="closeImageModal" style="float:right; cursor:pointer; font-size:20px;">&times;</span>
+        <img id="modalImage" src="" style="width:100%; border-radius:8px;">
+    </div>
+</div>
+
+<script>
+
+    const imageModal = document.getElementById('imageModal');
+    const modalImage = document.getElementById('modalImage');
+    const closeImageModal = document.getElementById('closeImageModal');
+
+    /* PROFILE */
+    const profileName = document.getElementById('profileName');
+    const profileMobile = document.getElementById('profileMobile');
+    const profileInitial = document.getElementById('profileInitial');
+
+const username = localStorage.getItem("loggedUser");
+const loggedUserId = localStorage.getItem("loggedUserId");
+
+async function loadProfile() {
+  if (!loggedUserId) return; // If not logged in
+
+  try {
+    const res = await fetch(`http://localhost:8082/profile/by-id/${loggedUserId}`);
+    if (!res.ok) throw new Error("Profile not found");
+
+    const data = await res.json();
+
+    // Display data
+    profileName.textContent = data.name;
+    profileMobile.textContent = "📱 " + data.mobile;
+    profileInitial.textContent = data.name.charAt(0).toUpperCase();
+
+  } catch (err) {
+    console.error(err);
+    alert("Failed to load profile.");
+  }
+}
+
+if (loggedUserId) loadProfile();
+    /* MODAL */
+    const updateModal = document.getElementById('updateModal');
+    const updateForm = document.getElementById('updateForm');
+    const updateKey = document.getElementById('updateKey');
+    const updateValue = document.getElementById('updateValue');
+
+    document.getElementById('editProfileBtn').onclick = () => {
+      updateValue.value = '';
+      updateModal.classList.remove('hidden');
+    };
+
+    function closeModal() {
+      updateModal.classList.add('hidden');
+    }
+
+    updateKey.onchange = () => {
+      updateValue.type = updateKey.value === 'password' ? 'password' : 'text';
+    };
+
+    updateForm.onsubmit = async (e) => {
+  e.preventDefault();
+
+  const key = updateKey.value.toLowerCase();
+  const value = updateValue.value.trim();
+
+  if (!value) {
+    alert("Value cannot be empty");
+    return;
+  }
+
+  const payload = {
+    username: username, // must match backend
+    key: key,
+    value: value
+  };
+
+  try {
+    const res = await fetch('http://localhost:8082/profile/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const resultText = await res.text(); // backend returns String
+
+    if (resultText.startsWith("ERROR")) {
+      alert(resultText);
+      return;
+    }
+
+    // Update UI immediately (no backend change)
+    if (key === 'name') {
+      profileName.textContent = value;
+      profileInitial.textContent = value.charAt(0).toUpperCase();
+    }
+
+    if (key === 'mobile') {
+      profileMobile.textContent = "📱 " + value;
+    }
+
+    alert(resultText); // "Update successfully"
+    closeModal();
+
+  } catch (err) {
+    console.error(err);
+    alert("Update failed");
+  }
+};
+
+async function loadItems() {
+  if (!loggedUserId) {
+    console.error("User ID missing");
+    return;
+  }
+
+  // Load SELL items
+  try {
+    const sellRes = await fetch(`http://localhost:8082/api/user/${loggedUserId}/sellitem`);
+    let sellItems = await sellRes.json();
+    if (!Array.isArray(sellItems)) sellItems = [sellItems]; // fallback
+    displayItems('sellItems', sellItems);
+  } catch (err) {
+    console.error('Sell item load failed', err);
+  }
+
+  // Load BUY items
+  try {
+    const buyRes = await fetch(`http://localhost:8082/api/user/${loggedUserId}/buyitem`);
+    let buyItems = await buyRes.json();
+    if (!Array.isArray(buyItems)) buyItems = [buyItems]; // fallback
+    displayItems('buyItems', buyItems);
+  } catch (err) {
+    console.error('Buy item load failed', err);
+  }
+}
+
+function displayItems(containerId, items) {
+  const container = document.getElementById(containerId);
+
+  if (!Array.isArray(items)) items = [items];
+
+  if (items.length === 0) {
+    container.innerHTML = `<p class="text-slate-500 text-sm">No items found</p>`;
+    return;
+  }
+
+  container.innerHTML = items.map(item => {
+    const name = item.itemname || item.itemName || "Item";
+    const status = item.status || "Bought";
+    const price = item.price || item.amount || 0;
+    const image = item.imagepath || "https://via.placeholder.com/300";
+
+    return `
+      <div class="item-card">
+        <img
+          src="${image}"
+          onclick="openImageModal('${image}')"
+          style="cursor:pointer;"
+          onerror="this.src='https://via.placeholder.com/300'"
+        >
+        <div class="item-info">
+          <h4 class="font-semibold">${name}</h4>
+          <p>₹${price}</p>
+          <p class="text-xs">Status: ${status}</p>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+loadItems();
+
+
+   /* INVOICES */
+async function loadInvoices() {
+  if (!loggedUserId) return;
+
+  try {
+    const res = await fetch(`http://localhost:8082/${loggedUserId}/invoices`);
+    const invoices = await res.json();
+
+    const table = document.getElementById('invoiceTable');
+
+    if (!Array.isArray(invoices) || invoices.length === 0) {
+      table.innerHTML = `
+        <tr>
+          <td colspan="5" class="text-center text-slate-500 p-4">
+            No invoices available
+          </td>
+        </tr>`;
+      return;
+    }
+
+    table.innerHTML = invoices.map(inv => `
+      <tr>
+        <td>${inv.id}</td> <!-- Buyitem id as Invoice ID -->
+        <td>${inv.itemid}</td> <!-- Item ID -->
+        <td>${new Date(inv.date || inv.createdAt || Date.now()).toLocaleDateString()}</td> <!-- fallback date -->
+        <td>₹${inv.price}</td> <!-- Buyitem price -->
+        <td>
+          <button class="download-btn"
+            onclick="downloadInvoice('${inv.id}')">
+            Download
+          </button>
+        </td>
+      </tr>
+    `).join('');
+
+  } catch (err) {
+    console.error('Invoice load failed', err);
+  }
+}
+ loadInvoices();
+
+
+
+    // click image to open modal
+function openImageModal(src) {
+  modalImage.src = src;
+  imageModal.classList.remove('hidden');
+}
+
+// close modal
+closeImageModal.onclick = () => {
+  imageModal.classList.add('hidden');
+  modalImage.src = '';
+};
+
+// close modal when clicking outside image
+imageModal.onclick = (e) => {
+  if (e.target === imageModal) {
+    imageModal.classList.add('hidden');
+    modalImage.src = '';
+  }
+};
+</script>
+
+</body>
+</html>

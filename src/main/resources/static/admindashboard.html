@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard - CampusKart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+
+<div class="flex min-h-screen">
+
+    <!-- SIDEBAR -->
+    <aside class="w-64 bg-blue-700 text-white p-5">
+        <h2 class="text-xl font-bold mb-6">CampusKart Admin</h2>
+        <ul class="space-y-3">
+            <li><button onclick="showSection('users')" class="w-full text-left">👤 Users</button></li>
+            <li><button onclick="showSection('items')" class="w-full text-left">📦 Listings</button></li>
+            <li><button onclick="showSection('orders')" class="w-full text-left">🛒 Orders</button></li>
+            <li><button onclick="showSection('history')" class="w-full text-left text-yellow-300">📜 History</button></li>
+            <li><button onclick="logout()" class="w-full text-left text-red-300">🚪 Logout</button></li>
+        </ul>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="flex-1 p-6">
+
+        <!-- USERS -->
+        <section id="users">
+            <h2 class="text-2xl font-bold mb-4">User Management</h2>
+
+            <input id="userSearch" placeholder="Search username or mobile"
+                   class="border p-2 mb-4 w-full" onkeyup="loadUsers()">
+
+            <table class="w-full bg-white shadow rounded">
+                <thead class="bg-gray-200">
+                <tr>
+                    <th class="p-2">Username</th>
+                    <th class="p-2">Mobile</th>
+                    <th class="p-2">Status</th>
+                    <th class="p-2">Actions</th>
+                </tr>
+                </thead>
+                <tbody id="userTable"></tbody>
+            </table>
+        </section>
+
+        <!-- ITEMS -->
+        <section id="items" class="hidden">
+            <h2 class="text-2xl font-bold mb-4">Product Listings</h2>
+
+            <table class="w-full bg-white shadow rounded">
+                <thead class="bg-gray-200">
+                <tr>
+                    <th class="p-2">Item</th>
+                    <th class="p-2">Seller</th>
+                    <th class="p-2">Price</th>
+                    <th class="p-2">Status</th>
+                    <th class="p-2">Actions</th>
+                </tr>
+                </thead>
+                <tbody id="itemTable"></tbody>
+            </table>
+        </section>
+
+        <!-- ORDERS -->
+        <section id="orders" class="hidden">
+            <h2 class="text-2xl font-bold mb-4">Orders</h2>
+
+            <table class="w-full bg-white shadow rounded">
+                <thead class="bg-gray-200">
+                <tr>
+                    <th class="p-2">Order ID</th>
+                    <th class="p-2">Item Name</th>
+                    <th class="p-2">Buyer</th>
+                    <th class="p-2">Seller</th>
+                    <th class="p-2">Price</th>
+                    <th class="p-2">Image</th>
+                </tr>
+                </thead>
+
+                <tbody id="orderTable"></tbody>
+            </table>
+        </section>
+
+        <!-- HISTORY -->
+        <section id="history" class="hidden">
+            <h2 class="text-2xl font-bold mb-4">Admin History</h2>
+            <p class="p-4 bg-white shadow rounded">Here you can display logs or recent admin activities.</p>
+        </section>
+
+
+    </main>
+</div>
+
+<script>
+    function showSection(id) {
+      document.querySelectorAll("section").forEach(s => s.classList.add("hidden"));
+      document.getElementById(id).classList.remove("hidden");
+
+      if (id === "history") {
+        loadHistory();
+      }
+    }
+
+        function logout() {
+          localStorage.clear();
+          window.location.href = "adminlogin.html";
+        }
+
+        // ---------------- USERS ----------------
+        async function loadUsers() {
+      const q = userSearch.value.trim();
+
+      let url = "http://localhost:8082/admin/users";
+      if (q !== "") {
+        url = `http://localhost:8082/admin/users/search?keyword=${q}`;
+      }
+
+      const res = await fetch(url);
+      const users = await res.json();
+
+      userTable.innerHTML = "";
+      users.forEach(u => {
+        userTable.innerHTML += `
+          <tr class="border-t">
+            <td class="p-2">${u.username}</td>
+            <td class="p-2">${u.mobile}</td>
+            <td class="p-2">${u.blocked ? "Blocked" : "Active"}</td>
+            <td class="p-2 space-x-2">
+              <button onclick="toggleBlock(${u.id})"
+                class="px-2 py-1 bg-yellow-500 text-white rounded">
+                ${u.blocked ? "Unblock" : "Block"}
+              </button>
+              <button onclick="deleteUser(${u.id})"
+                class="px-2 py-1 bg-red-600 text-white rounded">
+                Delete
+              </button>
+            </td>
+          </tr>`;
+      });
+    }
+
+
+        async function toggleBlock(id) {
+          await fetch(`http://localhost:8082/admin/users/${id}/block`, { method: "POST" });
+          loadUsers();
+        }
+
+        async function deleteUser(userId) {
+  const adminId = localStorage.getItem("loggedUserId");
+
+  if (!adminId) {
+    alert("Admin not logged in");
+    return;
+  }
+
+  if (!confirm("Are you sure you want to delete this user?")) return;
+
+  try {
+    const res = await fetch(
+      `http://localhost:8082/admin/deleteuser/${userId}/${adminId}`,
+      { method: "DELETE" }
+    );
+
+    const msg = await res.text();
+    alert(msg);
+
+    if (res.ok) {
+      loadUsers(); // refresh list
+    }
+
+  } catch (err) {
+    console.error(err);
+    alert("Delete failed");
+  }
+}
+
+
+        // ---------------- ITEMS ----------------
+    async function loadItems() {
+      const res = await fetch("http://localhost:8082/admin/items");
+      const items = await res.json();
+
+      itemTable.innerHTML = "";
+
+      items.forEach(i => {
+        itemTable.innerHTML += `
+         <tr class="border-t text-center align-middle">
+            <td class="p-2">
+              <img src="${i.imagepath}"
+                   alt="Item Image"
+                   class="w-20 h-20 object-cover mx-auto rounded shadow">
+            </td>
+          <tr class="border-t text-center">
+            <td class="p-2">${i.itemname}</td>
+            <td class="p-2">${i.username}</td>
+            <td class="p-2">₹${i.price}</td>
+            <td class="p-2">${i.status}</td>
+            <td class="p-2 space-x-2">
+              <button
+                onclick="deleteItem(${i.itemId})"
+                class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded">
+                Delete
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+
+    async function markSold(id) {
+          await fetch(`http://localhost:8082/admin/items/${id}/sold`, { method: "POST" });
+          loadItems();
+        }
+    async function deleteItem(itemId) {
+      await fetch(`http://localhost:8082/admin/items/${itemId}`, {
+        method: "DELETE"
+      });
+
+      // ✅ set a flag in localStorage for marketplace
+      localStorage.setItem("adminDeletedItem", "true");
+
+      loadItems(); // refresh admin table
+    }
+
+
+        // ---------------- ORDERS ----------------
+        async function loadOrders() {
+        const res = await fetch("http://localhost:8082/admin/orders");
+        const orders = await res.json();
+
+        orderTable.innerHTML = "";
+
+        orders.forEach(o => {
+            orderTable.innerHTML += `
+              <tr class="border-t text-center">
+                <td class="p-2">${o.id}</td>
+                <td class="p-2 font-semibold">${o.itemname}</td>
+                <td class="p-2">${o.buyername}</td>
+                <td class="p-2">${o.sellername}</td>
+                <td class="p-2">₹${o.price}</td>
+                <td class="p-2">
+                    <img src="${o.imagepath}"
+                         class="w-16 h-16 object-cover mx-auto rounded">
+                </td>
+              </tr>
+            `;
+        });
+    }
+
+        async function cancelOrder(id) {
+          await fetch(`http://localhost:8082/admin/orders/${id}/cancel`, { method: "POST" });
+          loadOrders();
+        }
+
+        // INITIAL LOAD
+        loadUsers();
+        loadItems();
+        loadOrders();
+
+
+        // Show the History section
+    function showHistory() {
+        document.querySelectorAll("section").forEach(s => s.classList.add("hidden"));
+        const historySection = document.getElementById("history");
+        historySection.classList.remove("hidden");
+        loadHistory(); // Load history data when section is shown
+    }
+
+    // Load admin history dynamically
+
+    async function loadHistory() {
+        const historySection = document.getElementById("history");
+
+        try {
+            const res = await fetch("http://localhost:8082/admin/history");
+            const historyData = await res.json();
+
+            let html = `
+                <h2 class="text-2xl font-bold mb-4">Admin History</h2>
+                <table class="w-full bg-white shadow rounded">
+                    <thead class="bg-gray-200">
+                        <tr>
+                            <th class="p-2">ID</th>
+                            <th class="p-2">Description</th>
+                            <th class="p-2">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            historyData.forEach(h => {
+                html += `
+                    <tr class="border-t text-center">
+                        <td class="p-2">${h.id}</td>
+                        <td class="p-2">${h.description}</td>
+                        <td class="p-2">${new Date(h.date).toLocaleString()}</td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            historySection.innerHTML = html;
+
+        } catch (err) {
+            historySection.innerHTML =
+                `<p class="p-4 text-red-500">Failed to load history.</p>`;
+            console.error(err);
+        }
+    }
+
+</script>
+
+</body>
+</html>

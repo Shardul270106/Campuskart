@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusKart</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body class="bg-gray-100 font-[Poppins]">
+
+<!-- HEADER -->
+<header class="bg-white shadow sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-indigo-600">CampusKart</h1>
+
+        <button id="userBtn" class="flex items-center gap-2 border px-4 py-2 rounded cursor-pointer">
+            👤 <span id="usernameText">Guest</span>
+        </button>
+
+        <button id="sellBtn" class="bg-green-500 text-white px-4 py-2 rounded">Sell Item</button>
+
+        <button id="cartBtn" class="relative text-2xl">
+            🛒
+            <span id="cartCount" class="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-2 rounded-full hidden"></span>
+        </button>
+    </div>
+</header>
+<div id="adminDeleteMsg"
+     class="hidden mb-4 p-3 bg-red-100 border border-red-400 text-red-800 rounded text-center">
+    ⚠️ One of your items may have been removed by admin due to policy violation.
+</div>
+<!-- PRODUCTS -->
+<main class="max-w-7xl mx-auto p-6">
+    <div id="productGrid" class="grid grid-cols-2 md:grid-cols-4 gap-6"></div>
+</main>
+
+<!-- SELL MODAL -->
+<div id="sellModal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-xl w-full max-w-md relative">
+        <button id="closeSell" class="absolute top-3 right-3">✖</button>
+        <h2 class="text-xl font-bold mb-4 text-center">Sell Item</h2>
+
+        <form id="sellForm" class="space-y-4">
+            <div id="dropZone" class="border-2 border-dashed rounded p-4 text-center cursor-pointer">
+                Click to upload image
+                <input type="file" id="imageInput" accept="image/*" hidden>
+                <div id="preview" class="mt-3 h-32 bg-gray-100 flex items-center justify-center">
+                    Image Preview
+                </div>
+            </div>
+
+            <input id="titleInput" required class="w-full border p-2 rounded" placeholder="Item name">
+            <input id="priceInput" required type="number" min="1" class="w-full border p-2 rounded" placeholder="Price">
+            <button class="w-full bg-indigo-600 text-white py-2 rounded">Post Item</button>
+        </form>
+    </div>
+</div>
+
+<!-- CART DRAWER -->
+<div id="cartDrawer" class="fixed inset-0 hidden z-40">
+    <div class="absolute inset-0 bg-black/40" onclick="closeCart()"></div>
+    <div class="absolute right-0 top-0 w-96 h-full bg-white p-6 flex flex-col">
+        <h2 class="text-xl font-bold mb-4">Cart</h2>
+
+        <div id="cartItems" class="flex-1 space-y-3"></div>
+
+        <div class="border-t pt-3">
+            <p class="font-semibold">Total: ₹<span id="cartTotal">0</span></p>
+            <button id="checkoutBtn" class="mt-3 w-full bg-indigo-600 text-white py-2 rounded">
+                Checkout
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- CHECKOUT MODAL -->
+<div id="checkoutModal" class="fixed inset-0 hidden bg-black/60 flex items-center justify-center z-50">
+    <div class="bg-white p-6 rounded w-full max-w-sm">
+        <h2 class="text-xl font-bold mb-4 text-center">Checkout</h2>
+        <form id="checkoutForm" class="space-y-3">
+            <input required placeholder="Username" class="w-full border p-2 rounded">
+            <input required type="email" placeholder="Email" class="w-full border p-2 rounded">
+            <button class="w-full bg-green-600 text-white py-2 rounded">
+                Confirm Purchase
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- INVOICE -->
+<div id="invoiceModal" class="fixed inset-0 hidden bg-black/60 flex items-center justify-center z-50">
+    <div class="bg-white p-6 rounded w-full max-w-lg">
+        <h2 class="text-xl font-bold mb-4 text-center">Invoice</h2>
+        <div id="invoice"></div>
+        <button onclick="closeInvoice()" class="mt-4 w-full bg-indigo-600 text-white py-2 rounded">
+            Close
+        </button>
+    </div>
+</div>
+
+<div id="toast"
+     class="fixed bottom-6 right-6 bg-green-600 text-white px-4 py-2 rounded shadow-lg hidden z-50">
+    ✅ Added to cart
+</div>
+
+<div id="imageModal"
+     class="fixed inset-0 hidden bg-black/70 flex items-center justify-center z-50">
+
+    <div class="relative bg-white p-4 rounded-lg max-w-lg w-full">
+        <button onclick="closeImageModal()"
+                class="absolute top-2 right-2 text-xl">✖</button>
+
+        <img id="modalImage"
+             src=""
+             class="w-full max-h-[70vh] object-contain rounded">
+    </div>
+</div>
+
+<script>
+    /* ---------- DOM ---------- */
+    const productGrid = document.getElementById("productGrid");
+    const cartItems = document.getElementById("cartItems");
+    const cartTotal = document.getElementById("cartTotal");
+    const cartCount = document.getElementById("cartCount");
+
+    const sellModal = document.getElementById("sellModal");
+    const cartDrawer = document.getElementById("cartDrawer");
+    const checkoutModal = document.getElementById("checkoutModal");
+    const invoiceModal = document.getElementById("invoiceModal");
+
+    const checkoutBtn = document.getElementById("checkoutBtn");
+    const checkoutForm = document.getElementById("checkoutForm");
+
+    const invoice = document.getElementById("invoice");
+
+    const dropZone = document.getElementById("dropZone");
+    const imageInput = document.getElementById("imageInput");
+    const preview = document.getElementById("preview");
+
+    const sellForm = document.getElementById("sellForm");
+    const titleInput = document.getElementById("titleInput");
+    const priceInput = document.getElementById("priceInput");
+
+    const sellBtn = document.getElementById("sellBtn");
+    const closeSell = document.getElementById("closeSell");
+    const cartBtn = document.getElementById("cartBtn");
+
+    const usernameText = document.getElementById("usernameText");
+    const userBtn = document.getElementById("userBtn");
+
+    async function fetchUserId(username) {
+  const res = await fetch(`http://localhost:8082/user/${username}`);
+  const user = await res.json();
+
+  localStorage.setItem("loggedUserId", user.id);
+}
+
+   const loggedUser = localStorage.getItem("loggedUser");
+usernameText.textContent = loggedUser ? loggedUser : "Guest";
+
+if (loggedUser) {
+  fetchUserId(loggedUser).then(() => {
+    fetchProducts();
+  });
+} else {
+  fetchProducts();
+}
+
+
+
+    let products = [];
+    let cart = [];
+    let uploadedImage = "";
+
+    /* ---------- FETCH PRODUCTS FROM BACKEND ---------- */
+    async function fetchProducts() {
+        try {
+            const res = await fetch("http://localhost:8082/sellitems"); // Your backend endpoint
+            products = await res.json();
+                 products = products.filter(
+          p => p.status && p.status.toLowerCase() === "available"
+        );
+            renderProducts();
+        } catch (err) {
+            console.error("Error fetching products:", err);
+        }
+    }
+
+    /* ---------- RENDER PRODUCTS ---------- */
+    function renderProducts() {
+    productGrid.innerHTML = "";
+
+    products.forEach(p => {
+const currentUserId = Number(localStorage.getItem("loggedUserId"));
+const isOwner = currentUserId > 0 && Number(p.userId) === currentUserId;
+
+
+
+        productGrid.innerHTML += `
+          <div class="bg-white p-4 rounded shadow">
+            <div onclick="openImageModal('${p.imagepath}')"
+     class="h-32 bg-cover bg-center rounded cursor-pointer hover:opacity-90"
+     style="background-image:url('${p.imagepath}')">
+</div>
+
+
+            <p class="font-semibold mt-2">${p.itemname}</p>
+            <p class="text-indigo-600 font-bold">₹${p.price}</p>
+            <p class="text-xs text-gray-500">Seller: ${p.username}</p>
+
+            ${
+                isOwner
+                ? `<button disabled
+                     class="mt-2 w-full bg-gray-400 text-white py-1 rounded cursor-not-allowed">
+                     You can't buy your own item
+                   </button>`
+                : `<button onclick="addToCart('${p.itemId}')"
+                     class="mt-2 w-full bg-indigo-600 text-white py-1 rounded">
+                     Add to Cart
+                   </button>`
+            }
+          </div>`;
+    });
+}
+
+
+    /* ---------- SELL ITEM ---------- */
+    dropZone.onclick = () => imageInput.click();
+    imageInput.onchange = e => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            uploadedImage = reader.result;
+            preview.style.backgroundImage = `url('${uploadedImage}')`;
+            preview.textContent = "";
+        };
+        reader.readAsDataURL(e.target.files[0]);
+    };
+
+    sellForm.onsubmit = async e => {
+        e.preventDefault();
+        if (!uploadedImage) return alert("Upload image");
+        if (!loggedUser) return alert("Please login");
+
+        const newItem = {
+            itemname: titleInput.value,
+            price: priceInput.value,
+            imagepath: uploadedImage,
+            username: loggedUser,
+            userId: localStorage.getItem("loggedUserId")
+        };
+
+        try {
+            await fetch("http://localhost:8082/sellitems", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(newItem)
+            });
+            alert("Item is on sell!");
+            sellForm.reset();
+            preview.style.backgroundImage = "";
+            preview.textContent = "Image Preview";
+            uploadedImage = "";
+            sellModal.classList.add("hidden");
+            fetchProducts();
+        } catch (err) {
+            console.error("Error posting item:", err);
+            alert("Failed to post item.");
+        }
+    };
+
+    sellBtn.onclick = () => {
+        if (!loggedUser) {
+            alert("Please login to sell items");
+            window.location.href = "login.html";
+            return;
+        }
+        sellModal.classList.remove("hidden");
+    };
+
+    closeSell.onclick = () => sellModal.classList.add("hidden");
+
+    /* ---------- USER BUTTON ---------- */
+userBtn.onclick = () => {
+  const userId = localStorage.getItem("loggedUserId");
+
+  if (userId) {
+    window.location.href = "Profile.html";
+  } else {
+    alert("Please login first");
+    window.location.href = "login.html";
+  }
+};
+
+
+
+    function showToast(message) {
+    const toast = document.getElementById("toast");
+    toast.textContent = message;
+    toast.classList.remove("hidden");
+
+    setTimeout(() => {
+        toast.classList.add("hidden");
+    }, 2000);
+}
+function openImageModal(src) {
+    const modal = document.getElementById("imageModal");
+    const img = document.getElementById("modalImage");
+
+    img.src = src;
+    modal.classList.remove("hidden");
+}
+
+function closeImageModal() {
+    document.getElementById("imageModal").classList.add("hidden");
+}
+
+
+    /* ---------- CART ---------- */
+function addToCart(itemId) {
+  if (cart.length > 0) {
+    alert("Second-hand items can only be bought one at a time");
+    return;
+  }
+
+  const item = products.find(p => p.itemId == itemId);
+  if (!item) return;
+
+  cart.push({ ...item });
+  updateCart();
+  showToast("Item added to cart");
+}
+
+
+function updateCart() {
+  cartItems.innerHTML = "";
+
+  if (cart.length === 0) {
+    cartTotal.textContent = 0;
+    cartCount.classList.add("hidden");
+    return;
+  }
+
+  const c = cart[0];
+
+  cartItems.innerHTML = `
+    <div class="flex justify-between">
+      <span>${c.itemname}</span>
+      <span>₹${c.price}</span>
+    </div>
+  `;
+
+  cartTotal.textContent = c.price;
+  cartCount.textContent = 1;
+  cartCount.classList.remove("hidden");
+}
+
+
+    function changeQty(i, d) {
+        cart[i].qty += d;
+        if (cart[i].qty <= 0) cart.splice(i, 1);
+        updateCart();
+    }
+
+    cartBtn.onclick = () => cartDrawer.classList.remove("hidden");
+    function closeCart() { cartDrawer.classList.add("hidden"); }
+    function closeInvoice() { invoiceModal.classList.add("hidden"); }
+
+    /* ---------- CHECKOUT ---------- */
+    checkoutBtn.onclick = () => {
+        if (cart.length === 0) {
+            alert("Cart is empty");
+            return;
+        }
+        checkoutModal.classList.remove("hidden");
+    };
+
+   checkoutForm.onsubmit = async e => {
+  e.preventDefault();
+
+  if (!loggedUser) {
+    alert("Please login first");
+    window.location.href = "login.html";
+    return;
+  }
+
+  if (cart.length !== 1) {
+    alert("Invalid cart");
+    return;
+  }
+
+  const emailInput = checkoutForm.querySelector("input[type='email']");
+  const email = emailInput.value;
+
+  const item = cart[0];
+
+  const payload = {
+    itemid: Number(item.itemId),
+    username: loggedUser,
+    email: email
+  };
+
+  try {
+    const res = await fetch("http://localhost:8082/buyitems", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const message = await res.text();
+
+    if (!res.ok) {
+      alert(message);
+      return;
+    }
+
+    alert(message);
+
+    // Clear frontend state
+    cart = [];
+    updateCart();
+    checkoutModal.classList.add("hidden");
+
+    // Reload marketplace from backend (item disappears)
+    fetchProducts();
+
+  } catch (err) {
+    console.error("Buy failed:", err);
+    alert("Purchase failed. Try again.");
+  }
+};
+
+    /* ---------- INIT ---------- */
+    fetchProducts();
+
+</script>
+
+</body>
+</html>
