@@ -24,4 +24,6 @@ public class User
     String password;
     @Column(nullable = false)
     String mobile;
+    @Column(unique = true, nullable = false)
+    String email;
 }

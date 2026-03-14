@@ -7,6 +7,12 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Toastify CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+
+    <!-- Toastify JS -->
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
 </head>
 
 <body class="bg-gray-100 font-[Poppins]">
@@ -76,17 +82,38 @@
     </div>
 </div>
 
-<!-- CHECKOUT MODAL -->
+<!-- PAYMENT MODAL (OLX STYLE) -->
 <div id="checkoutModal" class="fixed inset-0 hidden bg-black/60 flex items-center justify-center z-50">
     <div class="bg-white p-6 rounded w-full max-w-sm">
-        <h2 class="text-xl font-bold mb-4 text-center">Checkout</h2>
-        <form id="checkoutForm" class="space-y-3">
-            <input required placeholder="Username" class="w-full border p-2 rounded">
-            <input required type="email" placeholder="Email" class="w-full border p-2 rounded">
-            <button class="w-full bg-green-600 text-white py-2 rounded">
+        <h2 class="text-xl font-bold mb-4 text-center">Choose Payment Method</h2>
+
+        <div class="space-y-3">
+            <button onclick="selectPayment('UPI')"
+                    class="w-full border p-3 rounded flex justify-between items-center hover:bg-gray-100">
+                <span>UPI</span>
+                <span>➜</span>
+            </button>
+            <button onclick="selectPayment('Meet and pay')"
+                    class="w-full border p-3 rounded flex justify-between items-center hover:bg-gray-100">
+                <span>Meet and pay</span>
+                <span>➜</span>
+            </button>
+            <button onclick="selectPayment('COD')"
+                    class="w-full border p-3 rounded flex justify-between items-center hover:bg-gray-100">
+                <span>Cash on Delivery</span>
+                <span>➜</span>
+            </button>
+        </div>
+
+        <div class="mt-4">
+            <input id="buyerEmail" type="email" placeholder="Enter your email"
+                   class="w-full border p-2 rounded mb-3" required>
+
+            <button onclick="confirmPurchase()"
+                    class="w-full bg-green-600 text-white py-2 rounded">
                 Confirm Purchase
             </button>
-        </form>
+        </div>
     </div>
 </div>
 
@@ -101,11 +128,6 @@
     </div>
 </div>
 
-<div id="toast"
-     class="fixed bottom-6 right-6 bg-green-600 text-white px-4 py-2 rounded shadow-lg hidden z-50">
-    ✅ Added to cart
-</div>
-
 <div id="imageModal"
      class="fixed inset-0 hidden bg-black/70 flex items-center justify-center z-50">
 
@@ -118,6 +140,51 @@
              class="w-full max-h-[70vh] object-contain rounded">
     </div>
 </div>
+<!-- CHAT MODAL -->
+<div id="chatModal" class="fixed inset-0 hidden bg-black/60 flex items-center justify-center z-50">
+    <div class="bg-white w-full max-w-md rounded-xl flex flex-col h-[500px]">
+
+        <div class="p-3 border-b flex justify-between items-center">
+            <span class="font-bold">Chat</span>
+            <button onclick="closeChat()">✖</button>
+        </div>
+
+        <div id="chatMessages" class="flex-1 p-3 overflow-y-auto space-y-2"></div>
+
+        <div class="p-3 border-t flex gap-2">
+            <input id="chatInput" class="flex-1 border rounded px-2" placeholder="Type message...">
+            <button id="micBtn" onclick="startVoiceAI()"
+                    class="bg-green-600 text-white px-3 rounded">🎤</button>
+
+            <button onclick="sendChat()" class="bg-indigo-600 text-white px-4 rounded">Send</button>
+        </div>
+
+    </div>
+</div>
+<!-- SELLER CHAT LIST MODAL -->
+<div id="chatListModal" class="fixed inset-0 hidden bg-black/60 flex items-center justify-center z-50">
+    <div class="bg-white w-full max-w-md rounded-xl h-[500px] flex flex-col">
+
+        <div class="p-3 border-b font-bold flex justify-between">
+            Your Chats
+            <button onclick="closeChatList()">✖</button>
+        </div>
+
+        <div id="chatList" class="flex-1 overflow-y-auto"></div>
+
+    </div>
+</div>
+
+<button onclick="openAIChat()"
+        class="fixed bottom-6 right-6 bg-indigo-600 text-white px-5 py-3 rounded-full shadow-lg hover:scale-105 transition">
+    🤖 AI Help
+</button>
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
 
 <script>
     /* ---------- DOM ---------- */
@@ -132,7 +199,7 @@
     const invoiceModal = document.getElementById("invoiceModal");
 
     const checkoutBtn = document.getElementById("checkoutBtn");
-    const checkoutForm = document.getElementById("checkoutForm");
+
 
     const invoice = document.getElementById("invoice");
 
@@ -190,39 +257,80 @@ if (loggedUser) {
     }
 
     /* ---------- RENDER PRODUCTS ---------- */
-    function renderProducts() {
+   function renderProducts() {
     productGrid.innerHTML = "";
 
+    const currentUserId = Number(localStorage.getItem("loggedUserId") || 0);
+
     products.forEach(p => {
-const currentUserId = Number(localStorage.getItem("loggedUserId"));
-const isOwner = currentUserId > 0 && Number(p.userId) === currentUserId;
+        const isOwner = currentUserId > 0 && Number(p.userId) === currentUserId;
+
+        // Create product card
+        const card = document.createElement("div");
+        card.className = "bg-white p-4 rounded shadow";
+
+        // Image
+        const imgDiv = document.createElement("div");
+        imgDiv.className = "h-32 bg-cover bg-center rounded cursor-pointer hover:opacity-90";
+        imgDiv.style.backgroundImage = `url('${p.imagepath}')`;
+        imgDiv.onclick = () => openImageModal(p.imagepath);
+        card.appendChild(imgDiv);
+
+        // Item name
+        const name = document.createElement("p");
+        name.className = "font-semibold mt-2";
+        name.textContent = p.itemname;
+        card.appendChild(name);
+
+        // Price
+        const price = document.createElement("p");
+        price.className = "text-indigo-600 font-bold";
+        price.textContent = `₹${p.price}`;
+        card.appendChild(price);
+
+        // Seller
+        const seller = document.createElement("p");
+        seller.className = "text-xs text-gray-500";
+        seller.textContent = `Seller: ${p.username}`;
+        card.appendChild(seller);
+
+        // Buttons container
+        const btnContainer = document.createElement("div");
+        btnContainer.className = "mt-2 flex flex-col gap-2";
+
+        if (isOwner) {
+
+    // Seller can still chat with buyers
+    const chatBtn = document.createElement("button");
+    chatBtn.textContent = "View Chats 💬";
+    chatBtn.className = "w-full bg-green-600 text-white py-1 rounded";
+
+    // open chat using same room logic
+      chatBtn.onclick = () => openSellerChats();
+
+    btnContainer.appendChild(chatBtn);
+
+} else {
+
+    // Buyer buttons
+    const cartBtn = document.createElement("button");
+    cartBtn.textContent = "Add to Cart";
+    cartBtn.className = "w-full bg-indigo-600 text-white py-1 rounded";
+    cartBtn.onclick = () => addToCart(p.itemId);
+
+    const chatBtn = document.createElement("button");
+    chatBtn.textContent = "Chat Now 💬";
+    chatBtn.className = "w-full bg-green-600 text-white py-1 rounded";
+  chatBtn.onclick = () => openChat(p.userId, p.itemId);
 
 
-
-        productGrid.innerHTML += `
-          <div class="bg-white p-4 rounded shadow">
-            <div onclick="openImageModal('${p.imagepath}')"
-     class="h-32 bg-cover bg-center rounded cursor-pointer hover:opacity-90"
-     style="background-image:url('${p.imagepath}')">
-</div>
+    btnContainer.appendChild(cartBtn);
+    btnContainer.appendChild(chatBtn);
+}
 
 
-            <p class="font-semibold mt-2">${p.itemname}</p>
-            <p class="text-indigo-600 font-bold">₹${p.price}</p>
-            <p class="text-xs text-gray-500">Seller: ${p.username}</p>
-
-            ${
-                isOwner
-                ? `<button disabled
-                     class="mt-2 w-full bg-gray-400 text-white py-1 rounded cursor-not-allowed">
-                     You can't buy your own item
-                   </button>`
-                : `<button onclick="addToCart('${p.itemId}')"
-                     class="mt-2 w-full bg-indigo-600 text-white py-1 rounded">
-                     Add to Cart
-                   </button>`
-            }
-          </div>`;
+        card.appendChild(btnContainer);
+        productGrid.appendChild(card);
     });
 }
 
@@ -241,8 +349,9 @@ const isOwner = currentUserId > 0 && Number(p.userId) === currentUserId;
 
     sellForm.onsubmit = async e => {
         e.preventDefault();
-        if (!uploadedImage) return alert("Upload image");
-        if (!loggedUser) return alert("Please login");
+        if (!uploadedImage) return showToast("Upload image","warning");
+        if (!loggedUser) return showToast("Please login first", "error");
+
 
         const newItem = {
             itemname: titleInput.value,
@@ -258,7 +367,8 @@ const isOwner = currentUserId > 0 && Number(p.userId) === currentUserId;
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(newItem)
             });
-            alert("Item is on sell!");
+           showToast("Item posted successfully 🎉");
+
             sellForm.reset();
             preview.style.backgroundImage = "";
             preview.textContent = "Image Preview";
@@ -267,7 +377,7 @@ const isOwner = currentUserId > 0 && Number(p.userId) === currentUserId;
             fetchProducts();
         } catch (err) {
             console.error("Error posting item:", err);
-            alert("Failed to post item.");
+            showToast("Failed to post item.","error");
         }
     };
 
@@ -289,22 +399,36 @@ userBtn.onclick = () => {
   if (userId) {
     window.location.href = "Profile.html";
   } else {
-    alert("Please login first");
+    showToast("Please login first","warning");
     window.location.href = "login.html";
   }
 };
 
 
 
-    function showToast(message) {
-    const toast = document.getElementById("toast");
-    toast.textContent = message;
-    toast.classList.remove("hidden");
+    function showToast(message, type = "success") {
 
-    setTimeout(() => {
-        toast.classList.add("hidden");
-    }, 2000);
+    let bgColor = "#16a34a"; // green
+
+    if (type === "error") bgColor = "#dc2626";     // red
+    if (type === "info") bgColor = "#2563eb";      // blue
+    if (type === "warning") bgColor = "#f59e0b";   // orange
+
+    Toastify({
+        text: message,
+        duration: 2500,
+        gravity: "top",   // top or bottom
+        position: "center",   // left, center, right
+        close: true,
+        stopOnFocus: true,
+        style: {
+            background: bgColor,
+            borderRadius: "8px",
+            fontFamily: "Poppins"
+        }
+    }).showToast();
 }
+
 function openImageModal(src) {
     const modal = document.getElementById("imageModal");
     const img = document.getElementById("modalImage");
@@ -321,7 +445,8 @@ function closeImageModal() {
     /* ---------- CART ---------- */
 function addToCart(itemId) {
   if (cart.length > 0) {
-    alert("Second-hand items can only be bought one at a time");
+   showToast("Second-hand items can only be bought one at a time", "warning");
+
     return;
   }
 
@@ -330,7 +455,7 @@ function addToCart(itemId) {
 
   cart.push({ ...item });
   updateCart();
-  showToast("Item added to cart");
+  showToast("Item added to cart","success");
 }
 
 
@@ -371,28 +496,44 @@ function updateCart() {
     /* ---------- CHECKOUT ---------- */
     checkoutBtn.onclick = () => {
         if (cart.length === 0) {
-            alert("Cart is empty");
+           showToast("Cart is empty", "warning");
             return;
         }
         checkoutModal.classList.remove("hidden");
     };
 
-   checkoutForm.onsubmit = async e => {
-  e.preventDefault();
 
+    /* ---------- INIT ---------- */
+    fetchProducts();
+let selectedPaymentMethod = "";
+
+function selectPayment(method) {
+  selectedPaymentMethod = method;
+  showToast("Selected: " + method);
+}
+
+async function confirmPurchase() {
   if (!loggedUser) {
-    alert("Please login first");
+    showToast("Please login first","error");
     window.location.href = "login.html";
     return;
   }
 
   if (cart.length !== 1) {
-    alert("Invalid cart");
+    showToast("Invalid cart","error");
     return;
   }
 
-  const emailInput = checkoutForm.querySelector("input[type='email']");
-  const email = emailInput.value;
+  if (!selectedPaymentMethod) {
+    showToast("Select payment method", "warning");
+    return;
+  }
+
+  const email = document.getElementById("buyerEmail").value;
+  if (!email) {
+    showToast("Enter email","warning");
+    return;
+  }
 
   const item = cart[0];
 
@@ -416,24 +557,415 @@ function updateCart() {
       return;
     }
 
-    alert(message);
+   showToast("Order placed successfully using " + selectedPaymentMethod, "info");
 
-    // Clear frontend state
+
+    // Reset UI
     cart = [];
     updateCart();
+    selectedPaymentMethod = "";
+    document.getElementById("buyerEmail").value = "";
+
     checkoutModal.classList.add("hidden");
 
-    // Reload marketplace from backend (item disappears)
+    // Reload products
     fetchProducts();
 
   } catch (err) {
     console.error("Buy failed:", err);
-    alert("Purchase failed. Try again.");
-  }
-};
+    showToast("Purchase failed", "error");
 
-    /* ---------- INIT ---------- */
-    fetchProducts();
+  }
+}
+let stompClient = null;
+let activeRoomId = null;
+
+async function openChat(itemOwnerId, itemId) {
+
+    const currentUserId = Number(localStorage.getItem("loggedUserId"));
+    let room = null;
+
+    // ===== SELLER =====
+    if (currentUserId === itemOwnerId) {
+
+        const res = await fetch(
+            `http://localhost:8082/api/chat/rooms/seller/${currentUserId}`
+        );
+
+        const rooms = await res.json();
+
+        if (rooms.length === 0) {
+            showToast("💬No buyer has started chat yet","message");
+            return;
+        }
+
+        room = rooms[0]; // open first chat for now
+    }
+
+    // ===== BUYER =====
+    else {
+
+        const res = await fetch(
+            `http://localhost:8082/api/chat/room?buyerUserId=${currentUserId}&sellerUserId=${itemOwnerId}&itemId=${itemId}`,
+            { method: "POST" }
+        );
+
+        room = await res.json();
+    }
+
+    activeRoomId = room.id;
+
+    // ===== LOAD HISTORY =====
+    const historyRes = await fetch(
+        `http://localhost:8082/api/chat/messages/${activeRoomId}`
+    );
+
+    const history = await historyRes.json();
+
+    const box = document.getElementById("chatMessages");
+    box.innerHTML = "";
+    history.forEach(addMsg);
+
+    await connectSocket();
+
+    document.getElementById("chatModal").classList.remove("hidden");
+}
+async function openSellerChats() {
+
+    const sellerId = Number(localStorage.getItem("loggedUserId"));
+
+    const res = await fetch(`http://localhost:8082/api/chat/rooms/seller/${sellerId}`);
+    const rooms = await res.json();
+
+    if (rooms.length === 0) {
+        showToast("💬No buyer has started chat yet");
+        return;
+    }
+
+    const list = document.getElementById("chatList");
+    list.innerHTML = "";
+
+    rooms.forEach(room => {
+        const div = document.createElement("div");
+        div.className = "p-3 border-b cursor-pointer hover:bg-gray-100";
+
+        div.innerHTML = `
+          <div class="font-semibold">Buyer ID: ${room.buyerUserId}</div>
+          <div class="text-xs text-gray-500">Item ID: ${room.itemId}</div>
+        `;
+
+        div.onclick = () => {
+            closeChatList();
+            openChatByRoomId(room.id);
+        };
+
+        list.appendChild(div);
+    });
+
+    document.getElementById("chatListModal").classList.remove("hidden");
+}
+async function openChatByRoomId(roomId) {
+
+    activeRoomId = roomId;
+
+    const historyRes = await fetch(`http://localhost:8082/api/chat/messages/${activeRoomId}`);
+    const history = await historyRes.json();
+
+    const box = document.getElementById("chatMessages");
+    box.innerHTML = "";
+    history.forEach(addMsg);
+
+    await connectSocket();
+    document.getElementById("chatModal").classList.remove("hidden");
+}
+
+function connectSocket() {
+
+    return new Promise((resolve, reject) => {
+
+        const subscribeToRoom = () => {
+            console.log("Subscribing to:", activeRoomId);
+
+            stompClient.subscribe("/topic/chat/" + activeRoomId, (msg) => {
+                addMsg(JSON.parse(msg.body));
+            });
+
+            resolve();
+        };
+
+        // already connected → ONLY resubscribe
+        if (stompClient && stompClient.connected) {
+            subscribeToRoom();
+            return;
+        }
+
+        const socket = new SockJS("http://localhost:8082/ws-chat");
+        stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, () => {
+            subscribeToRoom();
+        }, reject);
+    });
+}
+
+
+function sendChat() {
+    if (!stompClient || !stompClient.connected) return;
+
+    const input = document.getElementById("chatInput");
+    const text = input.value.trim();
+    if (!text) return;
+
+    stompClient.send("/app/chat.send", {}, JSON.stringify({
+        chatRoomId: activeRoomId,
+        senderUserId: Number(localStorage.getItem("loggedUserId")),
+        senderName: localStorage.getItem("loggedUser"),
+        content: text
+    }));
+
+    input.value = "";
+}
+
+
+function addMsg(m) {
+    const box = document.getElementById("chatMessages");
+    const me = Number(localStorage.getItem("loggedUserId"));
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "flex mb-2 " + (m.senderUserId === me ? "justify-end" : "justify-start");
+
+    const bubble = document.createElement("div");
+    bubble.className = "px-3 py-2 rounded-2xl max-w-[70%] break-words " +
+        (m.senderUserId === me ? "bg-indigo-600 text-white" : "bg-gray-200 text-black");
+
+    // Add sender name
+    const name = document.createElement("div");
+    name.className = "text-xs font-semibold opacity-70 mb-1";
+    name.textContent = m.senderUserId === me ? "You" : m.senderName;
+
+    // Add message content
+    const msg = document.createElement("div");
+    msg.textContent = m.content;
+
+    // Append name and message to bubble
+    bubble.appendChild(name);
+    bubble.appendChild(msg);
+
+    wrapper.appendChild(bubble);
+    box.appendChild(wrapper);
+
+    // Auto scroll
+    box.scrollTop = box.scrollHeight;
+}
+
+
+function closeChat() {
+    document.getElementById("chatModal").classList.add("hidden");
+}
+
+    function closeChatList() {
+    document.getElementById("chatListModal").classList.add("hidden");
+}
+
+/* ================= AI CHAT (FIXED + MODERN) ================= */
+
+let aiMode = false;
+
+/* open AI chat */
+function openAIChat() {
+    aiMode = true;
+    document.getElementById("chatMessages").innerHTML = "";
+    document.getElementById("chatModal").classList.remove("hidden");
+
+    addAiMessage("Hi 👋 I'm CampusKart AI.\nAsk me about buying, selling, or orders!");
+}
+
+/* =============== MAIN SEND BUTTON (ONE FUNCTION ONLY) =============== */
+async function sendChat() {
+
+    const input = document.getElementById("chatInput");
+    const text = input.value.trim();
+    if (!text) return;
+
+    /* ---------- AI MODE ---------- */
+    if (aiMode) {
+        addUserMessage(text);
+        input.value = "";
+
+        addTyping(); // typing animation
+
+        const res = await fetch("http://localhost:8082/api/ai/chat", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({message:text})
+        });
+
+        const data = await res.json();   // ✅ read JSON
+
+removeTyping();
+
+            // show AI text
+            addAiMessage(data.answer);
+            speakAI(data.answer);
+            // show images/products
+            data.items.forEach(item => {
+                addProductCard(item);
+            });
+    }
+
+    /* ---------- NORMAL SELLER CHAT ---------- */
+    if (!stompClient || !stompClient.connected) return;
+
+    stompClient.send("/app/chat.send", {}, JSON.stringify({
+        chatRoomId: activeRoomId,
+        senderUserId: Number(localStorage.getItem("loggedUserId")),
+        senderName: localStorage.getItem("loggedUser"),
+        content: text
+    }));
+
+    input.value = "";
+}
+function addUserMessage(text) {
+    const box = document.getElementById("chatMessages");
+    box.innerHTML += `
+      <div class="flex justify-end mb-2">
+        <div class="bg-indigo-600 text-white px-4 py-2 rounded-2xl max-w-[70%] break-words shadow">
+          ${text}
+        </div>
+      </div>`;
+    box.scrollTop = box.scrollHeight;
+}
+
+function addAiMessage(text) {
+    const box = document.getElementById("chatMessages");
+    box.innerHTML += `
+      <div class="flex justify-start mb-2">
+        <div class="bg-gray-200 px-4 py-2 rounded-2xl max-w-[70%] break-words shadow-sm">
+          ${text}
+        </div>
+      </div>`;
+    box.scrollTop = box.scrollHeight;
+}
+function addProductCard(item) {
+    const box = document.getElementById("chatMessages");
+
+    const path = (item.imagepath || "").trim(); // 🔥 trim fixes hidden spaces
+
+    const imgSrc = path.startsWith("data:")
+        ? path                    // base64
+        : window.location.origin + "/" + path; // file path
+
+    box.innerHTML += `
+      <div class="flex justify-start mb-2">
+        <div class="bg-white border rounded-xl shadow p-3 flex gap-3 items-center max-w-[70%]">
+
+          <img src="${imgSrc}"
+               class="w-16 h-16 rounded-lg object-cover border cursor-pointer"
+               onclick="openImageModal('${imgSrc}')"/>
+
+          <div>
+            <div class="font-semibold">${item.itemname}</div>
+            <div class="text-sm text-gray-600">₹ ${item.price}</div>
+          </div>
+
+        </div>
+      </div>
+    `;
+
+    box.scrollTop = box.scrollHeight;
+}
+
+
+/* ===== typing animation ===== */
+function addTyping() {
+    const box = document.getElementById("chatMessages");
+
+    const div = document.createElement("div");
+    div.id = "typing";
+    div.className = "text-gray-400 text-sm";
+    div.innerText = "CampusKart AI typing...";
+    box.appendChild(div);
+
+    box.scrollTop = box.scrollHeight;
+}
+
+function removeTyping() {
+    const t = document.getElementById("typing");
+    if (t) t.remove();
+}
+
+/* close chat resets mode */
+function closeChat() {
+    aiMode = false;
+    document.getElementById("chatModal").classList.add("hidden");
+}
+
+    /* ================= VOICE AI ================= */
+
+// 🎤 speech → text
+function startVoiceAI() {
+    const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    const recognition = new SpeechRecognition();
+
+    recognition.lang = "en-IN";
+    recognition.interimResults = true; // optional, allows live text
+    recognition.start();
+
+    const input = document.getElementById("chatInput");
+
+    recognition.onresult = function(e) {
+        let transcript = "";
+        for (let i = 0; i < e.results.length; i++) {
+            transcript += e.results[i][0].transcript;
+        }
+
+        // Put the recognized text in the input box ONLY
+        input.value = transcript;
+    };
+
+    recognition.onerror = () => {
+        console.log("Mic error ❌");
+    };
+}
+
+
+
+// send recognized text to backend
+async function sendVoiceTextToAI(text) {
+
+    addTyping();
+
+    const res = await fetch("http://localhost:8082/api/ai/chat", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({message:text})
+    });
+
+    const data = await res.json();
+
+    removeTyping();
+
+    addAiMessage(data.answer);
+
+    speakAI(data.answer);
+
+    data.items.forEach(addProductCard);
+}
+
+
+// 🔊 text → speech
+function speakAI(text) {
+
+    const speech = new SpeechSynthesisUtterance(text);
+
+    speech.lang = "en-IN";
+    speech.rate = 1;
+
+    window.speechSynthesis.cancel(); // stop old voice
+    window.speechSynthesis.speak(speech);
+}
 
 </script>
 

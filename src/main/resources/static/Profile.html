@@ -439,19 +439,24 @@ async function loadInvoices() {
     }
 
     table.innerHTML = invoices.map(inv => `
-      <tr>
-        <td>${inv.id}</td> <!-- Buyitem id as Invoice ID -->
-        <td>${inv.itemid}</td> <!-- Item ID -->
-        <td>${new Date(inv.date || inv.createdAt || Date.now()).toLocaleDateString()}</td> <!-- fallback date -->
-        <td>₹${inv.price}</td> <!-- Buyitem price -->
-        <td>
-          <button class="download-btn"
-            onclick="downloadInvoice('${inv.id}')">
-            Download
-          </button>
-        </td>
-      </tr>
-    `).join('');
+  <tr>
+    <td>${inv.id}</td>
+    <td>${inv.itemid}</td>
+    <td>${new Date(inv.date || Date.now()).toLocaleDateString()}</td>
+    <td>₹${inv.price}</td>
+    <td>
+      <button class="download-btn"
+        onclick="downloadInvoice(
+          '${inv.id}',
+          '${inv.itemid}',
+          '${inv.price}',
+          '${new Date(inv.date || Date.now()).toLocaleDateString()}'
+        )">
+        Download
+      </button>
+    </td>
+  </tr>
+`).join('');
 
   } catch (err) {
     console.error('Invoice load failed', err);
@@ -480,6 +485,39 @@ imageModal.onclick = (e) => {
     modalImage.src = '';
   }
 };
+
+    function downloadInvoice(id, item, price, date) {
+  const html = `
+    <div style="font-family:Arial;padding:25px">
+      <h2 style="text-align:center">CampusKart Invoice</h2>
+
+      <p><b>Invoice ID:</b> ${id}</p>
+      <p><b>Date:</b> ${date}</p>
+      <p><b>Buyer:</b> ${username}</p>
+
+      <hr>
+
+      <table style="width:100%;border-collapse:collapse">
+        <tr>
+          <th style="border:1px solid #ccc;padding:8px">Item</th>
+          <th style="border:1px solid #ccc;padding:8px">Amount</th>
+        </tr>
+        <tr>
+          <td style="border:1px solid #ccc;padding:8px">${item}</td>
+          <td style="border:1px solid #ccc;padding:8px">₹${price}</td>
+        </tr>
+      </table>
+
+      <h3 style="text-align:right">Total: ₹${price}</h3>
+    </div>
+  `;
+
+  const win = window.open('', '', 'width=800,height=600');
+  win.document.write(html);
+  win.document.close();
+  win.print();
+}
+
 </script>
 
 </body>

@@ -12,6 +12,8 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.campuskart.demo.service.EmailService;
+
 
 import java.util.List;
 
@@ -23,6 +25,9 @@ public class UserControllers {
     @Autowired
     HistoryRepo historyRepo;
 
+    @Autowired
+    EmailService emailService;
+
     @PostMapping("/register")
     public String register(@RequestBody User user)
     {
@@ -32,8 +37,12 @@ public class UserControllers {
         if (userRepo.findByCollegeId(user.getCollegeId()) !=null) {
             return "ERROR: CollegeId already exists";
         }
-        userRepo.save(user);
-        return "Signup Successful";
+        User savedUser = userRepo.save(user);
+
+// send registration email with logo
+        emailService.sendRegistrationMail(savedUser.getEmail(), savedUser.getName());
+
+        return "Signup Successful 🥳. Email sent!";
     }
 
     @PostMapping("/login")

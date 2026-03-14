@@ -6,7 +6,9 @@
   <title>Campus Kart - Login & Register</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
   <style>
     body {
       font-family: 'Inter', sans-serif;
@@ -19,16 +21,37 @@
       to { opacity: 1; }
     }
     .bg-login {
-      background: url('https://images.unsplash.com/photo-1605902711622-cfb43c443e26?auto=format&fit=crop&w=1350&q=80') no-repeat center center;
+      background: url('Campuskart.png') no-repeat center center;
       background-size: cover;
+      transition: background-position 0.1s ease-out;
+      perspective: 1200px;
+      overflow: hidden;
+       position: relative;
     }
+    .bg-login::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: inherit;
+  transform: scale(1.1);
+  z-index: -1;
+  transition: transform 0.1s ease-out;
+}
+
+.floating-card {
+  transform-style: preserve-3d;
+  transition: transform 0.2s ease-out;
+  will-change: transform;
+}
   </style>
 </head>
 <body class="bg-login min-h-screen flex items-center justify-center">
 
   <!-- Container -->
-  <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 fade-in transform transition-all duration-700 hover:scale-105">
-    <h2 class="text-3xl font-extrabold text-center text-campus-dark mb-6">Welcome to Campus Kart</h2>
+  <div class="bg-white/70 backdrop-blur-lg rounded-3xl shadow-2xl w-full max-w-md p-8 fade-in transform transition-all duration-700 hover:scale-105 floating-card">
+
+
+  <h2 class="text-3xl font-extrabold text-center text-campus-dark mb-6">Welcome to Campus Kart</h2>
 
     <!-- Tabs -->
     <div class="flex justify-center mb-6 space-x-4">
@@ -68,6 +91,12 @@
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
         <input type="text" id="regUsername" required class="w-full p-3 border border-gray-300 rounded-xl focus:ring-green-500 focus:border-green-500 transition duration-300">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+        <input type="email" id="regEmail" required
+               class="w-full p-3 border border-gray-300 rounded-xl focus:ring-green-500 focus:border-green-500 transition duration-300">
       </div>
 
       <div>
@@ -124,52 +153,122 @@ loginForm.addEventListener("submit", async (e) => {
     localStorage.setItem("loggedUser", data.username);
     window.location.href = "marketplace.html";
   } else {
-    alert(text);
+    showToast(text);
   }
 });
 
 
-  /* REGISTER */
-  registerForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
+registerForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-    const data = {
-      name: document.getElementById("regName").value,
-      collegeId: document.getElementById("regCollegeId").value,
-      username: document.getElementById("regUsername").value,
-      password: document.getElementById("regPassword").value,
-      mobile: document.getElementById("regMobile").value
-    };
+  const btn = registerForm.querySelector("button");
+  btn.disabled = true; // prevent double click
 
-    try {
-      const response = await fetch("http://localhost:8082/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
+  const loader = showLoadingToast("Registering...");
 
-      const result = await response.text();
+  const data = {
+    name: regName.value,
+    collegeId: regCollegeId.value,
+    username: regUsername.value,
+    email: regEmail.value,
+    password: regPassword.value,
+    mobile: regMobile.value
+  };
 
-      if (response.ok) {
-        alert("Registration successful! Please login.");
+  try {
+    const response = await fetch("http://localhost:8082/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
 
-        // ✅ Switch to login tab automatically
-        loginTab.click();
+    loader.hideToast(); // remove loading
+    btn.disabled = false;
 
-        // optional: clear register form
-        registerForm.reset();
-      } else {
-        alert(result);
-      }
+    const result = await response.text();
 
-    } catch (error) {
-      alert("Server error. Try again.");
-      console.error(error);
+    if (response.ok) {
+      showToast("Registration successful🥳! Please Login.", "success");
+      loginTab.click();
+      registerForm.reset();
+    } else {
+      showToast(result, "error");
     }
+
+  } catch (error) {
+    loader.hideToast();
+    btn.disabled = false;
+    showToast("Server error. Try again.", "error");
+  }
+});
+
+
+
+
+   const bg = document.querySelector(".bg-login");
+  const card = document.querySelector(".floating-card");
+
+  document.addEventListener("mousemove", (e) => {
+    const x = (e.clientX / window.innerWidth - 0.5) * 30;
+    const y = (e.clientY / window.innerHeight - 0.5) * 30;
+
+    // Background parallax
+    bg.style.backgroundPosition = `${50 + x}% ${50 + y}%`;
+
+    // 3D tilt
+    card.style.transform = `
+      rotateX(${ -y }deg)
+      rotateY(${ x }deg)
+      translateZ(30px)
+    `;
   });
 
+  document.addEventListener("mouseleave", () => {
+    card.style.transform = `rotateX(0deg) rotateY(0deg) translateZ(0px)`;
+    bg.style.backgroundPosition = "center";
+  });
+function showToast(message, type = "success") {
 
-  </script>
+  let bg = "#16a34a"; // success green
+
+  if (type === "error") bg = "#dc2626";
+  if (type === "info") bg = "#2563eb";
+  if (type === "warning") bg = "#f59e0b";
+
+  Toastify({
+    text: message,
+    duration: 2500,
+    gravity: "top",
+    position: "center",
+    offset: { y: 70 },
+    close: true,
+    stopOnFocus: true,
+    style: {
+      background: bg,
+      borderRadius: "12px",
+      fontFamily: "Inter"
+    }
+  }).showToast();
+}
+function showLoadingToast(message = "Please wait...") {
+
+  return Toastify({
+    text: "⏳ " + message,
+    duration: -1,              // infinite until removed
+    gravity: "top",
+    position: "center",
+    offset: { y: 70 },
+    close: false,
+    stopOnFocus: true,
+    style: {
+      background: "#374151",   // gray
+      borderRadius: "12px",
+      fontFamily: "Inter"
+    }
+  }).showToast();
+}
+
+</script>
 
 
 </body>
